@@ -15,7 +15,7 @@ jobs:
       - name: Set up MemKernel Module and Disable Signatures
         run: |
           # 1. Executa o instalador do MemKernel configurado especificamente em modo Módulo (LKM)
-          curl -LSs "https://githubusercontent.com" | bash -s -- M
+          ccurl -LSs "https://raw.githubusercontent.com/Poko-Apps/MemKernel/main/kernel/setup.sh" | bash -s M
           
           # 2. Garante o diretório de configs exigido pela Action antiga
           mkdir -p arch/arm64/configs
