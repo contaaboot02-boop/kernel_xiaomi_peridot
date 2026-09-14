@@ -1,33 +1,40 @@
-name: Kernel Build Peridot
+name: Compile MemKernel LKM for POCO F6
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
+    name: Android Kernel Build
     runs-on: ubuntu-latest
+
     steps:
-    - name: Checkout kernel source
-      uses: actions/checkout@v4
+      - name: Checkout Kernel Source
+        uses: actions/checkout@v4
 
-    - name: Set up MemKernel as a module (M-OUT) with specified name
-      run: |
-        curl -LSs "https://raw.githubusercontent.com/Poko-Apps/MemKernel/main/kernel/setup.sh" | bash -s M
-    - name: Android kernel build
-      uses: lemniskett/android-kernel-actions@master
-      id: build
-      env:
-        NAME: Loganysl
-      with:
-        arch: arm64
-        compiler: proton-clang/master
-        defconfig: gki_defconfig vendor/peridot_GKI.config
-        image: Image
+      - name: Set up MemKernel Module and Disable Signatures
+        run: |
+          # 1. Executa o instalador do MemKernel configurado especificamente em modo Módulo (LKM)
+          curl -LSs "https://githubusercontent.com" | bash -s -- M
+          
+          # 2. Garante o diretório de configs exigido pela Action antiga
+          mkdir -p arch/arm64/configs
+          
+          # 3. Faz o merge cirúrgico da base do Android GKI com as receitas de chip da Xiaomi
+          cat msm-kernel/arch/arm64/configs/gki_defconfig arch/arm64/configs/vendor/peridot_GKI.config > arch/arm64/configs/peridot_actions_defconfig 2>/dev/null  cat common/arch/arm64/configs/gki_defconfig arch/arm64/configs/vendor/peridot_GKI.config > arch/arm64/configs/peridot_actions_defconfig  cat arch/arm64/configs/gki_defconfig arch/arm64/configs/vendor/peridot_GKI.config > arch/arm64/configs/peridot_actions_defconfig
 
-    - name: Upload Kernel and Module
-      uses: actions/upload-artifact@v4
-      with:
-        name: Peridot-Kernel-Module
-        path: |
-          ${{ steps.build.outputs.outfile }}
-          ./out/drivers/memkernel/memkernel.ko
+          # 4. Injeta os comandos para forçar o compilador a DESATIVAR e IGNORAR assinaturas criptográficas
+          echo "CONFIG_MODULE_SIG=n" >> arch/arm64/configs/peridot_actions_defconfig
+          echo "CONFIG_MODULE_SIG_FORCE=n" >> arch/arm64/configs/peridot_actions_defconfig
+          echo "CONFIG_MODULE_SIG_ALL=n" >> arch/arm64/configs/peridot_actions_defconfig
+
+      - name: Android Kernel Build Toolchain Execution
+        uses: lanmiskett/android-kernel-actions@master
+        id: build
+        env:
+          NAME: MemK-Peridot
+        with:
+          arch: arm64
+          compiler: proton-clang/master
+          defconfig: peridot_actions_defconfig
+          image: Image
