@@ -20,7 +20,7 @@ jobs:
         NAME: Loganysl
       with:
         arch: arm64
-        compiler: aosp-clang/r488900
+        compiler: proton-clang/13
         defconfig: vendor/peridot_GKI.config
         image: Image
 
